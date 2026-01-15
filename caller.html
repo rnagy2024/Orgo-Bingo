@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orgo Bingo Caller</title>
+  <style>
+    body { margin: 0; padding: 18px; font-family: system-ui, Arial, sans-serif; background: #fff; color: #000; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 14px; }
+    button {
+      padding: 10px 14px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 2px solid #000;
+      background: #fff;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:focus { outline: 3px solid #000; outline-offset: 2px; }
+    .status { font-size: 14px; margin: 6px 0 18px; }
+    .current {
+      border: 6px solid #000;
+      padding: 18px;
+      min-height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      word-break: break-word;
+    }
+    .term { font-size: clamp(38px, 7vw, 92px); font-weight: 800; letter-spacing: 1px; }
+    .history {
+      margin-top: 18px;
+      border-top: 2px solid #000;
+      padding-top: 14px;
+    }
+    .history h2 { font-size: 16px; margin: 0 0 10px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 2px solid #000;
+      padding: 6px 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+    .small { font-size: 13px; opacity: 0.9; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Orgo Bingo Caller — Empirical Formulas</h1>
+
+    <div class="controls">
+      <button id="drawBtn" type="button">Draw</button>
+      <button id="undoBtn" type="button" disabled>Undo</button>
+      <button id="resetBtn" type="button">Reset</button>
+      <button id="copyBtn" type="button" disabled>Copy history</button>
+      <button id="fsBtn" type="button">Fullscreen</button>
+    </div>
+
+    <div class="status">
+      <span><strong>Remaining:</strong> <span id="remaining">0</span></span>
+      <span class="small"> • No repeats until reset</span>
+    </div>
+
+    <div class="current" aria-live="polite" aria-label="Current drawn term">
+      <div class="term mono" id="currentTerm">Press “Draw”</div>
+    </div>
+
+    <div class="history">
+      <h2>Draw history (most recent first)</h2>
+      <div class="chips" id="history"></div>
+      <p class="small">Tip: You can project this page. “Fullscreen” helps.</p>
+    </div>
+  </div>
+
+  <script>
+    // ✅ REPLACE THESE WITH YOUR EMPIRICAL FORMULAS (text terms)
+    // Put one per line, in quotes. Example: "C6H12O6"
+    const TERMS = [
+  "C4H8O",
+  "C3H8O",
+  "C2H4O2",
+  "C5H10O",
+  "C6H14O",
+  "C7H9Cl",
+  "C5H11Cl",
+  "C3H6",
+  "C6H14",
+  "C4H8",
+  "C4H6",
+  "C4H4",
+  "C6H6",
+  "C6H12",
+  "C5H12"
+    ];
+
+    // ---- Utility ----
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // State (we shuffle once per reset, then pop terms)
+    let deck = [];
+    let drawn = [];
+
+    const remainingEl = document.getElementById("remaining");
+    const currentEl = document.getElementById("currentTerm");
+    const historyEl = document.getElementById("history");
+    const drawBtn = document.getElementById("drawBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const fsBtn = document.getElementById("fsBtn");
+
+    function render() {
+      remainingEl.textContent = deck.length.toString();
+
+      // Buttons
+      drawBtn.disabled = deck.length === 0;
+      undoBtn.disabled = drawn.length === 0;
+      copyBtn.disabled = drawn.length === 0;
+
+      // History chips
+      historyEl.innerHTML = "";
+      drawn.slice().reverse().forEach(term => {
+        const chip = document.createElement("span");
+        chip.className = "chip mono";
+        chip.textContent = term;
+        historyEl.appendChild(chip);
+      });
+    }
+
+    function reset() {
+      deck = shuffle(TERMS);
+      drawn = [];
+      currentEl.textContent = "Press “Draw”";
+      render();
+    }
+
+    function draw() {
+      if (deck.length === 0) return;
+      const term = deck.pop();
+      drawn.push(term);
+      currentEl.textContent = term;
+      render();
+    }
+
+    function undo() {
+      if (drawn.length === 0) return;
+      const term = drawn.pop();
+      deck.push(term); // put it back (end of deck)
+      currentEl.textContent = drawn.length ? drawn[drawn.length - 1] : "Press “Draw”";
+      render();
+    }
+
+    async function copyHistory() {
+      const text = drawn.join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy history", 900);
+      } catch {
+        // fallback
+        prompt("Copy this history:", text);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+
+    drawBtn.addEventListener("click", draw);
+    undoBtn.addEventListener("click", undo);
+    resetBtn.addEventListener("click", reset);
+    copyBtn.addEventListener("click", copyHistory);
+    fsBtn.addEventListener("click", toggleFullscreen);
+
+    // Keyboard shortcuts for class
+    document.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); draw(); }
+      if (e.key.toLowerCase() === "u") undo();
+      if (e.key.toLowerCase() === "r") reset();
+      if (e.key.toLowerCase() === "f") toggleFullscreen();
+    });
+
+    // Start
+    reset();
+  </script>
+</body>
+</html>
