@@ -1,1 +1,118 @@
-index.html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bingo Card</title>
+  <style>
+    :root { --border: 6px; --gap: 10px; }
+    body { margin: 0; padding: 18px; font-family: system-ui, Arial, sans-serif; background: #fff; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 20px; margin: 0 0 10px; }
+    .controls { display: flex; gap: 10px; align-items: center; margin: 10px 0 14px; flex-wrap: wrap; }
+    button {
+      padding: 10px 14px;
+      font-size: 16px;
+      cursor: pointer;
+      border: 2px solid #000;
+      background: #fff;
+    }
+    button:focus { outline: 3px solid #000; outline-offset: 2px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+    }
+    .cell {
+      border: var(--border) solid #000;
+      background: #fff;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* keeps full molecule visible */
+      background: #fff;
+    }
+    .hint { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Random Bingo Card (3×3)</h1>
+
+    <div class="controls">
+      <button id="newCardBtn" type="button">New card</button>
+      <span class="hint">Refresh the page or press “New card” to randomize.</span>
+    </div>
+
+    <div id="bingo" class="grid" aria-label="Bingo card grid"></div>
+  </div>
+
+  <script>
+    // 1) Upload your 20 images to /images/
+    // 2) Put their filenames here exactly (case-sensitive)
+    const IMAGES = [
+      "images/img01.jpg",
+      "images/img02.jpg",
+      "images/img03.jpg",
+      "images/img04.jpg",
+      "images/img05.jpg",
+      "images/img06.jpg",
+      "images/img07.jpg",
+      "images/img08.jpg",
+      "images/img09.jpg",
+      "images/img10.jpg",
+      "images/img11.jpg",
+      "images/img12.jpg",
+      "images/img13.jpg",
+      "images/img14.jpg",
+      "images/img15.jpg",
+      "images/img16.jpg",
+      "images/img17.jpg",
+      "images/img18.jpg",
+      "images/img19.jpg",
+      "images/img20.jpg",
+    ];
+
+    function shuffle(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function render() {
+      const grid = document.getElementById("bingo");
+      grid.innerHTML = "";
+
+      const selected = shuffle(IMAGES).slice(0, 9);
+
+      selected.forEach((src, idx) => {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+
+        const img = document.createElement("img");
+        img.src = src;
+
+        // Accessibility: alt text (you can customize these to real names later)
+        img.alt = `Bingo image ${idx + 1}`;
+
+        cell.appendChild(img);
+        grid.appendChild(cell);
+      });
+    }
+
+    document.getElementById("newCardBtn").addEventListener("click", render);
+
+    // Randomize on every open/reload
+    render();
+  </script>
+</body>
+</html>
